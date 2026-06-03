@@ -29,4 +29,4 @@ jobs:
           username: ${{ secrets.TIMEWEB_FTP_USER }}
           password: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ${{ secrets.TIMEWEB_FTP_SERVER_DIR }}
+          server-dir: /public_html/
