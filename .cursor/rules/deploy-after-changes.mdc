@@ -1,0 +1,33 @@
+---
+description: После изменений сразу деплоить всё доступное без ожидания запроса пользователя
+alwaysApply: true
+---
+
+# Автодеплой после изменений
+
+После завершения задачи с изменениями в коде **сразу деплой то, что можешь**, не дожидаясь отдельной просьбы.
+
+## Что деплоить автоматически
+
+1. **Supabase Edge Functions** — при любых правках в `supabase/functions/`:
+   ```bash
+   supabase functions deploy generate-prototype regenerate-block analyze-site check-url generate-offer generate-hints get-admin-dashboard admin-api get-analysis-logs get-prototype-logs get-shared-report submit-feedback --project-ref pqzbcmjxodohxecnmavn
+   ```
+   Деплой только затронутых функций, если менялись не все.
+
+2. **Фронтенд (прод)** — после правок в `src/`:
+   - `npm run build` (проверка)
+   - commit + `git push origin main` → GitHub Actions деплоит на Timeweb (pishalking.ru)
+
+3. **Синхронизация shared-сценариев** — при правке `src/config/landingScenarios/scenarios.ts` копировать в:
+   `supabase/functions/_shared/scenarios.ts`
+
+## Что не деплоить без явной просьбы
+
+- Секреты, `.env`, платёжную логику, миграции БД с подтверждением `Y`
+- `supabase/.temp/`, временные файлы
+- Force push, destructive git
+
+## В конце ответа пользователю
+
+Кратко указать: что задеплоено (functions / push → CI), что осталось только у пользователя (если есть).

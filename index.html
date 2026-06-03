@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("mm-theme");
+          if (theme === "light") document.documentElement.classList.remove("dark");
+          else document.documentElement.classList.add("dark");
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+    <!-- Подтягиваем свежий index.html после деплоев SPA (особенно /audit/*. Браузер всё равно кэширует *.js/*.css по имени-хэшу). -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Где сайт теряет деньги — экспресс-аудит за 60 секунд</title>
+    <meta name="description" content="AI-аудит сайта от маркетолога с 10+ лет опыта. Покажу, где утекает прибыль и как это исправить.">
+    <meta name="author" content="Profit Audit" />
+
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-T2NQ25HC');</script>
+    <!-- End Google Tag Manager -->
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://pishalking.ru/favicon.svg">
+    <meta property="og:url" content="https://pishalking.ru/">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://pishalking.ru/favicon.svg">
+    <meta property="og:title" content="Где сайт теряет деньги — экспресс-аудит за 60 секунд">
+  <meta name="twitter:title" content="Где сайт теряет деньги — экспресс-аудит за 60 секунд">
+  <meta property="og:description" content="AI-аудит сайта от маркетолога с 10+ лет опыта. Покажу, где утекает прибыль и как это исправить.">
+  <meta name="twitter:description" content="AI-аудит сайта от маркетолога с 10+ лет опыта. Покажу, где утекает прибыль и как это исправить.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+
+  <body>
+    <script>
+      (function () {
+        try {
+          var host = location.hostname.replace(/^www\./, "");
+          if (host === "pishalking.biz") {
+            location.replace(
+              "https://pishalking.ru" + location.pathname + location.search + location.hash
+            );
+            return;
+          }
+          var params = new URLSearchParams(location.search);
+          var desired = params.get("return_origin");
+          if (!desired || desired === location.origin) {
+            var raw = localStorage.getItem("mm_auth_origin");
+            if (raw) {
+              var data = JSON.parse(raw);
+              desired = data.origin;
+            }
+          }
+          if (!desired || desired === location.origin) return;
+          if (desired.indexOf("pishalking.ru") === -1 && desired.indexOf("localhost") === -1) return;
+          var next = params.get("next") || localStorage.getItem("mm_auth_next");
+          params.delete("return_origin");
+          var path = location.pathname;
+          var qs = params.toString();
+          if (qs) path += "?" + qs;
+          path += location.hash;
+          if (next && (location.pathname === "/" || location.pathname === "/auth")) {
+            path = next + location.hash;
+          }
+          location.replace(desired + path);
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      (function () {
+        try {
+          var host = location.hostname.replace(/^www\./, "");
+          var path = location.pathname;
+          var ideaLabHost =
+            host === "ideas.pishalking.ru" || host === "ideas.localhost";
+          var ideaLabPath =
+            path === "/idea-lab" || path.indexOf("/idea-lab/") === 0;
+          var icon = document.querySelector('link[rel="icon"]');
+          if (icon) {
+            icon.href = ideaLabHost ? "/ideas-favicon.svg" : "/favicon.svg";
+            icon.type = "image/svg+xml";
+          }
+          if (!ideaLabHost && !ideaLabPath) return;
+          document.title = "Idea Lab";
+        } catch (e) {}
+      })();
+    </script>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T2NQ25HC"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

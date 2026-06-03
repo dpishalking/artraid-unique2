@@ -1,0 +1,551 @@
+# МАСТЕР-ПРОМПТ LOVABLE: дизайн конверсионного лендинга под трафик
+# Версия: 2026-05-30
+# Использование: новый проект Lovable → вставить целиком → в конец добавить блок «КОНТЕНТ ПРОТОТИПА»
+#
+# Откуда брать контент:
+#   1. Лаборатория → прототип → превью pishalking.ru/lp/{slug}
+#   2. Или markdown-экспорт (buildPrototypeMarkdown) — все тексты по секциям
+#
+# Результат: один URL на вашем домене (.land / custom) для Яндекс.Директа
+
+---
+
+# КОНТЕКСТ
+
+Ты — senior product designer + frontend engineer уровня топ conversion studios (CXL, Conversion Rate Experts, Stripe Press, Linear, Apple Health editorial).
+
+Задача: сверстать **одну длинную конверсионную страницу** (long-form landing) для **холодного/тёплого трафика из контекстной рекламы** (Яндекс.Директ).
+
+**Критично:** тексты уже написаны профессиональным копирайтером. Ты **не переписываешь** заголовки, боли, CTA, отзывы, цены, гарантию. Только:
+- визуальная иерархия
+- типографика и ритм
+- компоненты и layout
+- микро-анимации
+- форма заявки
+- адаптив
+- состояния loading / empty / error / success
+
+Если текст кажется длинным — **не сокращай**, улучши читаемость (колонки, pull-quotes, spacing).
+
+Страница должна выглядеть как **премиальный editorial longread**, а не как:
+- шаблон Tilda 2018
+- лендинг телемагазина
+- generic SaaS hero + 3 карточки
+- «AI slop» с фиолетовыми градиентами
+
+Референсы по духу (не копировать дословно):
+- тёплые health/wellness editorial (Nat Kozlova style storytelling)
+- Stripe / Linear — чистая типографика и воздух
+- NYT / Medium longread — комfortable reading width
+- Apple Health — доверие, мягкие тона, без агрессии
+
+---
+
+# ТЕХНИЧЕСКИЙ СТЕК (обязательно)
+
+- React + Vite + TypeScript
+- Tailwind CSS
+- shadcn/ui (Button, Input, Accordion, Card, Badge, Separator)
+- lucide-react для иконок (минимально, осмысленно)
+- Mobile-first, затем md / lg breakpoints
+- Шрифты через Google Fonts или fontsource
+- Никаких тяжёлых UI-библиотек
+- Lighthouse: performance ≥ 90, accessibility ≥ 95 на mobile
+- Все интерактивные элементы — keyboard accessible
+
+---
+
+# БРЕНД И ВИЗУАЛЬНАЯ СИСТЕМА
+
+## Ниша и настроение
+
+Заполни при использовании (или выведи из контента):
+
+```
+Продукт: {{PRODUCT_NAME}}
+Ниша: {{NICHE}}          # например: здоровье ног, отёки, медизделие
+Аудитория: {{AUDIENCE}}  # например: женщины 45–65, устали от «разводов»
+Тон контента: {{TONE}}    # например: «разговор на кухне», тёплый, без канцелярита
+```
+
+## Design tokens (создай CSS variables в :root)
+
+**Палитра — тёплая, доверительная, не клиническая:**
+
+```css
+--background:        #FAF8F5;   /* тёплый off-white, не #fff */
+--foreground:        #1C1917;   /* warm near-black */
+--muted:             #78716C;   /* body secondary */
+--primary:           #B45309;   /* тёплый amber/terracotta — CTA, акценты */
+--primary-foreground:#FFFBEB;
+--secondary:         #E7E5E4;   /* soft stone */
+--accent:            #065F46;   /* deep sage — доверие, «здоровье» */
+--destructive:       #B91C1C;   /* только для «враг / было» */
+--border:            #E7E5E4;
+--ring:              #B45309;
+--radius:            0.75rem;   /* 12px — мягко, не pill-everything */
+--radius-lg:         1.25rem;
+--shadow-soft:       0 4px 24px -4px rgb(28 25 23 / 0.08);
+```
+
+Если продукт другой ниши — адаптируй, но сохрани принцип: **тёплый фон, один сильный CTA-цвет, один спокойный accent**.
+
+## Типографика
+
+```css
+--font-display: 'Fraunces', 'Georgia', serif;     /* заголовки — editorial warmth */
+--font-body:    'Source Serif 4', 'Georgia', serif; /* longread body — читаемость */
+--font-ui:      'DM Sans', system-ui, sans-serif;  /* кнопки, формы, labels */
+```
+
+**Шкала (mobile → desktop):**
+- H1 hero: 2rem / 1.15 → 3.25rem / 1.08, font-display, font-semibold
+- H2 section: 1.5rem → 2.25rem, font-display
+- H3: 1.125rem → 1.375rem, font-ui semibold
+- Body longread: 1.0625rem / 1.75 → 1.125rem / 1.8, font-body, max-width 42rem (≈680px)
+- UI / captions: 0.8125rem, font-ui, tracking-wide для labels
+- Pull-quote: 1.25rem italic, border-l-4 primary
+
+**Правила:**
+- Строка текста longread: **не шире 680px** по центру или слева с padding
+- Межсекционный ритм: py-16 md:py-24
+- Межабзацный: space-y-5 в storytelling блоках
+- Никакого ALL CAPS в заголовках длиннее 3 слов
+
+## Spacing & layout
+
+- Container: max-w-6xl mx-auto px-4 sm:px-6 lg:px-8
+- Reading column: max-w-2xl (prose)
+- Full-bleed accent sections: bg-secondary/50 или subtle gradient
+- Sticky header: h-14, backdrop-blur, border-b, z-50
+- Sticky mobile CTA bar (optional): только после scroll past hero, не перекрывать форму
+
+## Imagery & media
+
+- **Не используй** сток «улыбающиеся модели с белыми зубами»
+- Предпочитай: мягкие lifestyle photos, текстуры (ткань, чай, вечер дома), abstract warm gradients
+- Если нет реальных фото продукта — **editorial typography-only** лучше, чем fake product shot
+- Placeholder images: subtle gradient blocks с caption «фото продукта», не broken image
+- Все img: loading="lazy", alt осмысленный
+- Никаких auto-playing video
+
+## Motion
+
+- Subtle only: fade-in-up on scroll (Intersection Observer), 400ms ease-out
+- Hover на CTA: scale-[1.02] + shadow-soft, 150ms
+- Accordion FAQ: smooth height transition
+- **Запрещено:** parallax, bouncing buttons, confetti, мигающие «СРОЧНО!!!»
+
+---
+
+# СТРУКТУРА СТРАНИЦЫ
+
+Порядок секций — **строго по meta.sequence из контента** (если передан).
+По умолчанию:
+
+```
+1. hero
+2. paradigm_shift
+3. pain
+4. enemy_section
+5. solution
+6. transformation
+7. value
+8. product
+9. process
+10. founder
+11. comparison
+12. social_proof
+13. not_for
+14. objections
+15. faq
+16. future_pacing
+17. guarantee
+18. final_cta
++ micro_copy в форме и header
+```
+
+Каждая секция — `<section id="{key}">` для якорей и аналитики scroll depth.
+
+---
+
+# КОМПОНЕНТЫ ПО СЕКЦИЯМ (детальный UI-brief)
+
+## Global: Header
+
+- Logo / название проекта слева (text, не обязательно картинка)
+- Справа: `micro_copy.nav_cta` как Button variant outline sm
+- На mobile: logo + hamburger НЕ нужен (single page scroll)
+- Header сжимается при scroll, остаётся nav CTA
+
+---
+
+## 01 · HERO
+
+**Два режима — определи по контенту:**
+
+### A) Story-first (есть hero.story_opening)
+
+Это **главный режим** для tone «разговор на кухне».
+
+Layout:
+1. **Сначала** story_opening — full reading width, крупный serif body, как статья
+   - Параграфы через `\n\n` — отдельные `<p>`
+   - Прямая речь — `<blockquote>` или italic с кавычками
+   - Первая строка может быть drop-cap (опционально)
+2. story_bridge — muted text, чуть меньше body
+3. Visual break: тонкая separator или decorative «···»
+4. **Потом** headline (H1) + subheadline — не наоборот
+5. Primary CTA button (full width mobile, inline desktop)
+6. trust bullets — row of small checkmarks / dots, muted
+7. hero_badge (micro_copy) — Badge над story или над H1
+
+**Не делай:** H1 первым, если есть story — история всегда выше.
+
+### B) Classic hero (нет story_opening)
+
+- hero_badge сверху
+- H1 + subheadline
+- CTA + trust
+- Optional: split layout desktop — текст слева 55%, справа warm gradient / photo placeholder
+
+**CTA button:**
+- min-h-12, px-8, rounded-[var(--radius)]
+- текст = hero.cta дословно
+- под кнопкой: micro_copy.trust_badge мелким шрифтом
+
+**Designer-only (не показывать публично):** headline_variants — скрыты или в dev-only comment
+
+---
+
+## 02 · PARADIGM_SHIFT
+
+Layout: provocative H2 → grid 2 cols (mobile stack)
+
+| Старое убеждение | Новое убеждение |
+|------------------|-----------------|
+| Card destructive/5, line-through old_belief | Card primary/5, new_belief bold |
+
+Под grid: bridge paragraph
+transition_hook — italic pull-quote с border-l primary внизу секции
+
+---
+
+## 03 · PAIN
+
+- H2 = pain.title
+- intro — lead paragraph, чуть крупнее body
+- points — **не boring bullet list:**
+  - каждый point = row с иконкой ArrowRight или em-dash
+  - или numbered soft cards с hover bg
+- Если tone storytelling — points могут читаться как продолжение истории (меньше «списка симптомов»)
+
+---
+
+## 04 · ENEMY_SECTION
+
+- H2 headline
+- enemy_name — выделенная card с border-2 destructive/30, icon AlertTriangle subtle
+- how_enemy_works + proof — два абзаца
+- proof label «Доказательство» — small caps label font-ui
+
+---
+
+## 05 · SOLUTION
+
+- H2 title
+- steps — **3–4 step cards** horizontal scroll mobile / grid desktop
+  - номер шага в circle
+  - title bold + desc muted
+  - connector line между шагами на desktop (optional)
+
+---
+
+## 06 · TRANSFORMATION
+
+- H2 headline + timeline badge
+- Split: **До** (muted, strikethrough items optional) | **После** (accent green checkmarks)
+- Desktop: two columns with vertical divider
+- Mobile: tabs или stacked with clear labels
+
+---
+
+## 07 · VALUE
+
+- H2 title
+- metrics — **3 stat cards** in row
+  - number — font-display 2.5rem bold primary
+  - label — below
+  - fascination / loss_framing — small muted under card (expand on hover mobile: always visible)
+
+---
+
+## 08 · PRODUCT
+
+- H2 title
+- anchor_context — lead text above pricing
+- tiers — pricing cards:
+  - recommended tier: ring-2 primary, scale slightly up
+  - price — font-display large
+  - features — check list
+  - tier CTA — secondary button
+- Value stack visual: optional «стоимость комплекта» vs «ваша цена» strikethrough (только если есть в тексте)
+
+---
+
+## 09 · PROCESS
+
+- Horizontal timeline или numbered vertical steps
+- duration — Badge на каждом шаге
+- Ощущение: «это просто, предсказуемо»
+
+---
+
+## 10 · FOUNDER
+
+- **Рано на странице** если sequence так dictates — часто после pain
+- Layout: photo placeholder circle / square rounded-lg + story text
+- credentials — 3–4 pills или mini list с Check icons
+- why_this — highlighted callout box
+- Личный, уязвимый тон — design не должен выглядеть «корпоративно»
+
+---
+
+## 11 · COMPARISON
+
+- Responsive table → cards on mobile
+- us_label / them_label — column headers
+- us column — checkmarks green tint
+- them column — muted X or dash
+- differentiation_angle — subtitle under H2
+
+---
+
+## 12 · SOCIAL_PROOF
+
+- **Testimonial cards** — не carousel autoplay
+- Each item:
+  - before_state — small muted above quote
+  - quote — large serif italic, opening «»
+  - author + role + result — row below, result in accent color
+- Grid 1 col mobile, 2–3 col desktop
+- Star rating optional if in content
+
+---
+
+## 13 · NOT_FOR
+
+- Intentionally muted section — builds trust
+- H2 + intro + points with X icons (not aggressive red)
+- Frame: «Честно говорим, кому не подойдёт»
+
+---
+
+## 14 · OBJECTIONS
+
+- **Accordion** (shadcn) — objection = trigger, answer = content
+- Objection text — in quotes if already quoted in content
+- reframe — italic first line in answer
+- frequency «высокая» — tiny Badge
+
+---
+
+## 15 · FAQ
+
+- Separate Accordion from objections
+- Practical questions only
+- Clean, Krug-style — scannable questions
+
+---
+
+## 16 · FUTURE_PACING
+
+- Full-bleed section: warm gradient bg accent/5
+- H2 headline
+- scene — large serif, almost story paragraph
+- emotions — italic centered
+- contrast — separator line + one sentence
+
+---
+
+## 17 · GUARANTEE
+
+- Card with shield icon (Lucide ShieldCheck)
+- headline + type + duration badges
+- emotional_hook — prominent
+- conditions — small print section expandable «Подробные условия»
+
+---
+
+## 18 · FINAL_CTA
+
+- Strong closing section: bg primary/10 or dark warm band
+- H2 + subheadline centered
+- **Lead form** (see below) — not just button
+- urgency — subtle, not red countdown fake timer
+- risk_reversal — checkmark line under form
+
+---
+
+# ФОРМА ЗАЯВКИ (конверсия)
+
+Поля:
+- Имя (text, required)
+- Телефон (tel, required, mask +7 optional)
+- Placeholder имени = micro_copy.form_placeholder
+- Submit = micro_copy.form_submit или final_cta.cta
+
+Поведение:
+- Client-side validation
+- On success: micro_copy.form_success + CheckCircle icon, hide form
+- On error: toast или inline error
+- trust_badge под кнопкой
+
+**UTM capture:** read utm_source, utm_medium, utm_campaign, utm_content, utm_term from URL → hidden fields or send with submit payload
+
+**Submit endpoint (placeholder):**
+```typescript
+// POST to your backend — wire later
+await fetch('/api/lead', {
+  method: 'POST',
+  body: JSON.stringify({ name, phone, utm, source: 'landing' }),
+});
+```
+Пока backend нет — console.log + success state OK for MVP.
+
+**Privacy:** одна строка «Нажимая кнопку, вы соглашаетесь на обработку персональных данных» — muted xs
+
+---
+
+# MICRO-COPY (использовать дословно)
+
+```
+form_placeholder: {{MICRO_FORM_PLACEHOLDER}}
+form_submit:      {{MICRO_FORM_SUBMIT}}
+form_success:     {{MICRO_FORM_SUCCESS}}
+trust_badge:      {{MICRO_TRUST_BADGE}}
+nav_cta:          {{MICRO_NAV_CTA}}
+hero_badge:       {{MICRO_HERO_BADGE}}
+```
+
+---
+
+# SEO & META
+
+```html
+<title>{{PROJECT_NAME}} — {{HERO_HEADLINE shortened}}</title>
+<meta name="description" content="{{SUBHEADLINE first 155 chars}}">
+<meta name="robots" content="noindex, nofollow">  <!-- для рекламных LP часто noindex -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:title" content="...">
+<meta property="og:description" content="...">
+<meta property="og:type" content="website">
+```
+
+---
+
+# АНАЛИТИКА (заложить hooks)
+
+- data-section attributes on each section
+- Scroll depth: optional callback at 25/50/75/100%
+- Form submit event: window.dataLayer push placeholder for Yandex Metrika / GA
+- Click tracking on all CTA buttons: data-cta="hero|final|nav"
+
+---
+
+# STATES & EDGE CASES
+
+Реализуй все:
+- Form: idle, submitting (spinner in button), success, validation error
+- Page: skeleton не нужен (static content)
+- Empty block in JSON — skip section gracefully, no crash
+- Very long story_opening — still readable, no truncation
+- 320px viewport — no horizontal scroll
+
+---
+
+# ACCESSIBILITY
+
+- WCAG 2.1 AA minimum
+- Focus rings visible on all interactive
+- Accordion keyboard navigable
+- Color contrast ≥ 4.5:1 body text
+- prefers-reduced-motion: disable scroll animations
+
+---
+
+# ЗАПРЕЩЕНО (anti-patterns)
+
+- Переписывать тексты «для красоты»
+- Lorem ipsum anywhere
+- Fake countdown timers
+- Pop-ups on entry
+- Chat widget
+- Stock photos «доктор с stethoscope thumbs up»
+- Purple gradient SaaS aesthetic
+- More than 2 font families visible
+- Sticky CTA covering form on mobile
+- `[placeholder]` brackets in visible UI text
+- «NASA technology» visual clichés
+- Multiple competing primary CTAs same viewport
+
+---
+
+# IMPLEMENTATION ORDER (для Lovable)
+
+Спроси меня любые уточнения, если чего-то не хватает. Затем:
+
+1. **Design tokens + fonts + base layout** — покажи palette swatch page section
+2. **Header + Hero** (story-first if applicable) — mobile + desktop screenshot logic
+3. **Reading sections** pain → founder → social_proof — typography rhythm
+4. **Data sections** comparison, value, product, process
+5. **Trust sections** objections accordion, faq, guarantee, not_for
+6. **Future pacing + final CTA + form**
+7. **Polish** — scroll animations, sticky header, meta tags
+8. **QA pass** — 375px, 768px, 1280px; list any text overflow issues
+
+После каждого крупного шага — кратко перечисли что сделано и что осталось.
+
+---
+
+# КОНТЕНТ ПРОТОТИПА (вставить ниже — из Лаборатории)
+
+<!-- Скопируй сюда полный markdown экспорт прототипа.
+     Или вставь JSON blocks + meta.sequence.
+     Все тексты ниже — SOURCE OF TRUTH. Дизайн подстраивается под них. -->
+
+```
+{{PASTE_PROTOTYPE_MARKDOWN_HERE}}
+```
+
+---
+
+# ДОПОЛНИТЕЛЬНЫЕ ПАРАМЕТРЫ ЗАПУСКА (заполнить при необходимости)
+
+```
+Домен публикации:     {{DOMAIN}}           # например otek.yourbrand.land
+Язык:                 ru
+Primary CTA goal:     {{TARGET_ACTION}}    # из meta.target_action
+A/B headline test:    использовать hero.headline_variants[0] по умолчанию;
+                    variants[1] и [2] — закомментировать в коде для быстрой смены
+Noindex:              да (рекламный LP)
+```
+
+---
+
+# КРИТЕРИЙ ГОТОВНОСТИ («outstanding design»)
+
+Страница готова, когда:
+
+- [ ] Первый экран story читается как журнальная статья, не как баннер
+- [ ] CTA виден без scroll на mobile после story hook (или sticky после 40vh)
+- [ ] Нет визуального шума — каждая секция имеет один focal point
+- [ ] Форма в final_cta — главная конверсионная точка, не отвлекает header CTA
+- [ ] Все тексты из прототипа на месте, ни одного placeholder
+- [ ] Отзывы выглядят реальными (тиографика цитат, не карточки маркетплace)
+- [ ] На 375px ничего не ломается
+- [ ] Выглядит дороже, чем 95% лендингов в нише — но не «кричаще»
+
+---
+
+# КОНЕЦ МАСТЕР-ПРОМПТА

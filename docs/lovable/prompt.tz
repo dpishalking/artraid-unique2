@@ -1,0 +1,476 @@
+# Forge Lab — Full Landing Prototype Generator
+# prompt.tz для lovable.dev (Knowledge Base + AI pipeline spec)
+# Версия: 2026-05-30 · Источник: money-magnet-analytics / supabase/functions/_shared/
+
+---
+
+## 1. Контекст проекта
+
+**Продукт:** Pishalking Forge Lab — внутренняя лаборатория смысловых лендингов.
+
+**Задача AI:** не вёрстка и не дизайн, а **смысловой прототип** — JSON с 18 блоками копирайтинга + micro_copy. Публикуется на `/lp/:slug` и читается как живой лонгрид.
+
+**Цепочка (не менять порядок):**
+```
+Источники (файлы, текст, референсы)
+  → structure-kb (Gemini Flash) → Knowledge Base
+  → forge-generate-prototype (Gemini Pro) → JSON прототип
+  → FullLandingRenderer → публичная страница
+```
+
+**Единственный источник фактов:** база знаний продукта. AI не выдумывает характеристики, цены, сроки, состав.
+
+**Язык выхода:** русский. Стиль «ты»/«вы» — из tone в KB.
+
+---
+
+## 2. Tech stack (для Lovable UI)
+
+- Frontend: React + Vite + TypeScript + Tailwind + shadcn/ui
+- Backend: Supabase (Postgres + Edge Functions + RLS)
+- AI: Gemini 2.5 Pro (генерация прототипа), Gemini Flash (разбор KB)
+- Scraping референсов: Firecrawl (опционально)
+- Деплой фронта: Timeweb / Lovable → pishalking.ru
+- Публичные LP: `https://pishalking.ru/lp/{slug}` (НЕ pages.pishalking.ru)
+
+**Edge functions (ключевые):**
+- `forge-structure-kb` — файлы → JSON базы знаний
+- `forge-generate-prototype` — KB + tone → full landing JSON
+- `generate-prototype` — legacy/scenario path (общий prompt core)
+
+**Shared modules (источник правды для промптов):**
+- `prototypeGenerationCore.ts` — SYSTEM PROMPT + JSON schema
+- `prototypeUserPrompt.ts` — сборка user prompt
+- `forgeKbPrompt.ts` — секция KB в user prompt
+- `prototypeGenerateCore.ts` — вызов Gemini function call `emit_prototype`
+
+---
+
+## 3. Входные данные (Knowledge Base)
+
+### 3.1 Структура KB (forge_knowledge_base)
+
+| Поле | Назначение |
+|------|------------|
+| product | название, состав, формат, механизм |
+| audience | ЦА, возраст, контекст, страхи |
+| usp | оффер, big idea, enemy, guarantee |
+| pains[] | { text, weight } — сортировать по weight |
+| fab_matrix[] | feature → advantage → benefit |
+| objections[] | { text, answer } |
+| proofs[] | { type, title, body } |
+| voc[] | дословные фразы клиентов |
+| tone | JSON тона голоса |
+| source_documents[] | загруженные PDF/txt |
+| reference_sites[] | URL референсов (смысл, не факты) |
+| directions[] | тематические слои (отёки, варикоз…) |
+
+### 3.2 Направления (direction overlay)
+
+При `direction_slug` в промпт попадает:
+- общая база продукта
+- + overlay направления (боли, VOC, материалы только этой темы)
+
+Правило: **не смешивать боли разных направлений**.
+
+### 3.3 Отзывы (forge_reviews)
+
+- В промпт: до 25 штук, starred first
+- Фильтр по `tags` ↔ `direction_slug` если ≥2 tagged reviews
+- В social_proof — **только релевантные теме** отзывы
+
+### 3.4 Форматы тона (brief.format)
+
+| format | Поведение |
+|--------|-----------|
+| kitchen / story / storytelling | «Разговор на кухне» — Stefan Georgi + Collier (см. §6) |
+| agora | акцент enemy_section + paradigm_shift |
+| classic | цифры, факты, ясность |
+| longread | pain 7–10, objections 7+, social_proof 5+ |
+
+**Default для Lab UI:** `kitchen`
+
+---
+
+## 4. Вызов модели
+
+```yaml
+model: gemini-2.5-pro (geminiProModel())
+temperature: 0.65
+maxOutputTokens: 65536
+mode: forced function call
+function_name: emit_prototype
+function_description: "Возвращает готовый смысловой прототип лендинга"
+systemInstruction: PROTOTYPE_SYSTEM_PROMPT  # §5
+userParts: [{ text: buildPrototypeUserPrompt(...) }]  # §6
+retry: 1 attempt after 2s on failure
+```
+
+---
+
+## 5. SYSTEM PROMPT (PROTOTYPE_SYSTEM_PROMPT)
+
+> Вставить в Lovable Knowledge Base целиком или держать синхронизацию с `prototypeGenerationCore.ts`.
+
+Ты — старший продакт-маркетолог и копирайтер уровня топ-конверсионных агентств мира (CXL, Conversion Rate Experts, VWO). Ты собираешь смысловые прототипы лендингов — не дизайн, а скелет смыслов, от которого зависит конверсия.
+
+### ШАГ 0 — ОБЯЗАТЕЛЬНОЕ МЫШЛЕНИЕ ПЕРЕД ГЕНЕРАЦИЕЙ
+
+Прежде чем заполнять схему, выполни внутри себя следующий анализ (результаты отражаются в meta и блоках):
+
+1. **Стадия осознанности** (Hunt/Schwartz): определяет hero, pain, CTA
+2. **Sophistication 1–5** (Schwartz): нужен ли unique mechanism
+3. **VOC**: 7 реальных фраз из отзывов/чатов — не маркетинговый язык
+4. **Боль vs страх**: оба нужны
+5. **LF8** (Whitman): какие жизненные силы активны
+6. **Big Domino**: одно убеждение — переключи его → остальное падает
+7. **Уникальный механизм**: конкретно, не «индивидуальный подход»
+8. **Agora Big Idea**: контринтуитивная провокация
+9. **Agora Enemy**: конкретный враг (не клиент)
+10. **Эмоциональная дуга**: скептицизм → узнавание → доверие → действие
+
+### Сценарий лендинга (если передан в user prompt)
+
+- meta.target_action = primary CTA сценария
+- meta.sequence отражает логику сценария
+- Для «Проверка гипотезы» — короче (8–10 блоков между hero и final_cta)
+- Все 18 ключей blocks заполняются всегда; акценты — под сценарий
+
+### Форматы (brief.format)
+
+- **classic**: логика, цифры, факты
+- **story / storytelling / kitchen**: hero.story_opening обязателен; pain через эмоции; founder рано; objections как цитаты скептика
+- **agora**: enemy_section + paradigm_shift
+- **longread**: развёрнутые блоки
+
+### Библиотека моделей (применять, не называть в тексте)
+
+Hunt, 4U, AIDA, Schwartz, JTBD, StoryBrand, Cialdini×7, Hormozi Value Equation, Dunford, Eisenberg Trinity, Fogg MAP, Whitman LF8, Brunson Expert Secrets, Blair Warren, Sugarman Slippery Slide, Bencivenga Fascinations, Masterson Great Leads, Stefan Georgi story criteria, Agora 5 pillars (Big Idea, Enemy, Proof-Dominant, Future Pacing, Value Stack).
+
+Caples, Ogilvy, Collier, Hopkins, Williams, Heath SUCCESs, Makepeace — для заголовков.
+
+### Маппинг моделей на блоки
+
+- **hero**: 4U + Schwartz + Masterson lead + Agora Big Idea; 3 headline_variants (результат / боль / механизм)
+- **paradigm_shift**: Big Idea + New Opportunity
+- **pain**: JTBD + Enemy + Blair Warren + LF8-3
+- **enemy_section**: Agora Enemy + proof врага
+- **solution**: Big Domino + enemy defeated
+- **transformation**: before/after сцены + timeline
+- **value**: Hormozi + loss framing + fascinations
+- **product**: Value Stack 5–10× цены
+- **process**: Fogg + 3 шага StoryBrand
+- **founder**: уязвимость + credentials
+- **comparison**: Dunford + differentiation_angle
+- **social_proof**: имя + роль + цифра + срок; только в тему
+- **not_for**: ≥4 пункта анти-сегмента
+- **objections**: ≥5 эмоциональных (НЕ логистика)
+- **faq**: практика (состав, доставка) — без дубля objections
+- **future_pacing**: «Представь…» живая сцена
+- **guarantee**: тип + duration + emotional_hook
+- **final_cta**: Fogg + risk reversal + value stack
+- **micro_copy**: form_placeholder, form_submit, trust_badge, nav_cta, hero_badge
+
+### Правила текста
+
+**Запрещено:** качественный, профессиональный, индивидуальный подход, лидер рынка, комплексный подход, уникальные решения, «обратитесь к нам», «мы рады помочь» и т.д. — заменять конкретикой.
+
+**CTA:** глагол + результат + минимизация риска.
+
+**Конкретика:** «за 35 секунд», не «быстро».
+
+**Loss framing** в pain, value, final_cta.
+
+### КРИТИЧНО: запрет плейсхолдеров
+
+Прототип публикуется как живой лендинг.
+- **НИКОГДА** квадратные скобки `[...]` в видимых полях
+- Нет факта → перефраз без числа ИЛИ уточнение только в `note` (note видит команда, не посетитель)
+- Цена/сроки/гарантия — только из KB
+
+### Стоп-лист клише
+
+- NASA/космонавты/военные технологии
+- «верните лёгкость/молодость» — не повторять обещание-слово
+- «наливаются свинцом», «сигнал который нельзя игнорировать», «революционная технология», «ведущие специалисты»
+- Не лобить формулу врага («виноваты не вы, а индустрия») — подвести через сцену
+
+### Медизделия и здоровье
+
+- Не обещать лечение без подтверждения в KB
+- Мягко: «многие отмечают», «ощущение облегчения»
+
+### Отзывы
+
+- Только релевантные теме лендинга
+- Лучше 2 точных, чем 3 с одним off-topic
+
+**ФОРМАТ:** строго JSON-схема. Все обязательные поля. Без markdown в текстовых полях.
+
+---
+
+## 6. USER PROMPT — шаблон сборки
+
+User prompt собирается функцией `buildPrototypeUserPrompt(brief, options)`.
+
+### 6.1 Порядок секций
+
+```
+1. [knowledgeBaseBlock]     — если Forge Lab (fromKnowledgeBase)
+2. [projectContextBlock]    — опционально
+3. [scenarioSection]       — если scenario_id + answers
+4. [brief accents]           — guarantee, mechanism, bigidea, enemy, traffic, format
+5. [format voice block]      — kitchen/agora/classic/longread
+6. [competitorMd]            — Firecrawl конкурента
+7. [ownMd]                   — Firecrawl сайта клиента
+8. ## ЗАДАЧА + appendFullPrototypeTaskInstructions
+```
+
+### 6.2 Knowledge Base block (forgeKbPrompt)
+
+Секции:
+- Активное направление (если есть)
+- Исходные материалы (excerpt до 2500 chars)
+- Референсы по смыслу (не факты чужого продукта)
+- Продукт, Аудитория, УТП (JSON)
+- Боли (по weight)
+- СДВ-матрица
+- Возражения + ответы
+- Доказательства
+- VOC (до 20)
+- Отзывы (до 25)
+- Тон голоса
+
+Footer:
+```
+ВАЖНО:
+- VOC и отзывы — в hero и pain
+- Выгоды только из СДВ-матрицы
+- Возражения закрывать в objections
+- KB — единственный источник фактов
+```
+
+### 6.3 Kitchen voice (format = kitchen | story | storytelling)
+
+```
+ФОРМАТ: Разговор на кухне (Стефан Джорджи + Robert Collier).
+- Один рассказчик от первого лица до конца
+- hero.story_opening ОБЯЗАТЕЛЕН: живая сцена из быта, не «меня зовут»
+- Тон тёплый, короткие фразы, прямая речь
+- pain — через сцену и узнавание, не список симптомов
+- founder рано — до цены
+- objections — цитаты скептика в кавычках, потом честный ответ
+```
+
+### 6.4 Задача (appendFullPrototypeTaskInstructions)
+
+```
+meta.project_name = «{projectName}» (если задан)
+
+Сначала ШАГ 0 (мышление): awareness, VOC, mechanism, emotional_arc.
+
+Собери полный прототип:
+- 18 блоков + micro_copy — все обязательны
+- hero: 3 headline_variants (результат / боль / механизм)
+- note в каждом блоке — для дизайнера + модели в скобках
+- objections ≥5 по частоте
+- social_proof ≥3 с цифрами
+- Без воды и штампов
+- Без markdown в полях
+- sequence[0] = "hero", sequence[last] = "final_cta"
+- transition_hook в блоках — Slippery Slide (последняя строка экрана)
+```
+
+### 6.5 Переменные для Lovable / n8n / API
+
+```typescript
+type PrototypeBrief = {
+  scenario_id?: string;
+  answers?: Record<string, string>;
+  competitor_url?: string;
+  own_site_url?: string;
+  niche?: string;
+  product?: string;
+  audience?: string;
+  offer?: string;
+  price?: string;
+  guarantee?: string;
+  mechanism?: string;
+  bigidea?: string;
+  traffic?: string;
+  enemy?: string;
+  format?: string;  // kitchen | story | agora | classic | longread
+};
+
+type BuildOptions = {
+  knowledgeBaseBlock?: string;
+  projectContextBlock?: string;
+  competitorMd?: string;
+  ownMd?: string;
+  projectName?: string;
+  directionSlug?: string | null;
+  fromKnowledgeBase?: boolean;
+};
+```
+
+---
+
+## 7. OUTPUT — JSON schema (emit_prototype)
+
+### 7.1 meta (обязательные поля)
+
+```json
+{
+  "project_name": "string",
+  "tone_of_voice": "string",
+  "target_action": "string",
+  "awareness_stage": "1 — unaware … 5 — most aware",
+  "sophistication_level": 1,
+  "voc_phrases": ["7+ фраз"],
+  "emotional_arc": "string",
+  "sequence": ["hero", "…", "final_cta"],
+  "sequence_rationale": "2-3 предложения"
+}
+```
+
+**sequence:** первый всегда `hero`, последний `final_cta`. Между — только нужные блоки для аудитории.
+
+### 7.2 blocks (все 19 ключей обязательны)
+
+```
+hero, paradigm_shift, pain, enemy_section, solution, transformation,
+value, product, process, founder, comparison, social_proof, not_for,
+objections, faq, future_pacing, guarantee, final_cta, micro_copy
+```
+
+### 7.3 Ключевые поля hero
+
+```json
+{
+  "headline": "лучший из 3",
+  "headline_variants": ["угол результата", "угол боли", "угол механизма"],
+  "subheadline": "string",
+  "cta": "глагол + результат + риск",
+  "trust": ["string"],
+  "story_opening": "150-300 слов, только story/kitchen",
+  "story_bridge": "2-3 предложения мост к эксперту",
+  "note": "для дизайнера"
+}
+```
+
+### 7.4 micro_copy
+
+```json
+{
+  "form_placeholder": "string",
+  "form_submit": "string",
+  "form_success": "string",
+  "trust_badge": "5-8 слов под кнопкой",
+  "nav_cta": "string",
+  "hero_badge": "string"
+}
+```
+
+Полная JSON Schema: `supabase/functions/_shared/prototypeGenerationCore.ts` → `PROTOTYPE_SCHEMA`.
+
+---
+
+## 8. UI / страницы (Lovable)
+
+### 8.1 Admin Lab
+
+| Route | Назначение |
+|-------|------------|
+| /admin/lab/products | список продуктов |
+| /admin/lab/products/:id | вкладки: Источники, База знаний, Отзывы, Прототипы |
+| /admin/lab/prototypes/new | tone selector (default kitchen) + direction |
+| /admin/lab/prototypes/:id | preview, regenerate, publish slug |
+
+### 8.2 Public
+
+| Route | Назначение |
+|-------|------------|
+| /lp/:slug | FullLandingRenderer, mode=public |
+| preview | mode=preview — показывает note дизайнеру |
+
+**FullLandingRenderer:** рендерит `meta.sequence` по порядку; transition_hook italic; форма лида → forge API.
+
+### 8.3 Regenerate
+
+При regenerate сохранять `format` из `generation_input` — не сбрасывать tone.
+
+---
+
+## 9. Чеклист качества (post-generation review)
+
+Перед publish проверить:
+
+- [ ] Нет `[...]` в headline, points, quote, price, urgency
+- [ ] social_proof — все кейсы про тему направления
+- [ ] Нет NASA/телемагазин клише из стоп-листа
+- [ ] Медицинские claim — мягкие, если нет proof в KB
+- [ ] hero.story_opening есть при format=kitchen
+- [ ] sequence начинается с hero, заканчивается final_cta
+- [ ] objections ≠ faq (эмоции vs логистика)
+- [ ] CTA согласованы: hero, final_cta, micro_copy
+
+---
+
+## 10. Пример минимального user prompt (Forge + kitchen + отёки)
+
+```
+## БАЗА ЗНАНИЙ ПРОДУКТА (Knowledge Base)
+
+### Активное направление лендинга: Отёки ног
+...
+
+### Боли (отсортированы по весу)
+- К вечеру ноги «деревянные», след от носка (вес 10)
+...
+
+### Голос клиента (VOC)
+- "к вечеру только шлёпанцы"
+...
+
+ВАЖНО: база знаний выше — единственный источник фактов о продукте.
+
+## СТРУКТУРИРОВАННЫЕ АКЦЕНТЫ
+- Уникальный механизм: ...
+  → Основа блока "solution" и угол [2] hero.headline_variants.
+- Формат лендинга: kitchen
+  → ФОРМАТ: Разговор на кухне ...
+
+## ЗАДАЧА
+Собери полный смысловой прототип лендинга на основе базы знаний.
+meta.project_name = «Артрейд — отёки».
+[appendFullPrototypeTaskInstructions]
+```
+
+---
+
+## 11. Out of scope (не просить Lovable делать в этом TZ)
+
+- Per-block regenerate UI (regenerate-block) — отдельная задача
+- Figma handoff / design tokens export
+- DNS pages.pishalking.ru
+- Копирование env/migrations из других проектов
+
+---
+
+## 12. Синхронизация
+
+При изменении промпта обновлять:
+1. `prototypeGenerationCore.ts` (system + schema)
+2. `prototypeUserPrompt.ts` (user assembly + kitchen voice)
+3. `forgeKbPrompt.ts` (KB section)
+4. **Этот файл** `docs/lovable/prompt.tz`
+5. Deploy edge: `forge-generate-prototype`, `generate-prototype`
+6. Push main → pishalking.ru
+
+---
+
+# Как использовать в Lovable
+
+1. **Project → Settings → Knowledge Base** — вставить §1–§5 и §9.
+2. **Новая фича в Lab** — промпт: «Следуй docs/lovable/prompt.tz §8; не меняй AI pipeline без обновления TZ».
+3. **Отладка плохого LP** — сверить с чеклистом §9 и стоп-листом §5.

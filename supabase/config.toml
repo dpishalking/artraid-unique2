@@ -1,0 +1,92 @@
+project_id = "pqzbcmjxodohxecnmavn"
+
+# Auth (pqzb): Site URL = https://pishalking.ru
+# Redirect URLs: https://pishalking.ru/**, http://localhost:5173/**
+[auth]
+site_url = "https://pishalking.ru"
+additional_redirect_urls = [
+  "https://pishalking.ru/**",
+  "http://localhost:5173/**",
+  "http://127.0.0.1:5173/**",
+]
+
+[functions.check-url]
+verify_jwt = false
+
+[functions.analyze-site]
+verify_jwt = false
+
+[functions.get-shared-report]
+verify_jwt = false
+
+[functions.report-og]
+verify_jwt = false
+
+[functions.report-preview]
+verify_jwt = false
+
+[functions.get-shared-niche-snapshot]
+verify_jwt = false
+
+[functions.scan-due-competitors]
+verify_jwt = false
+
+[functions.submit-feedback]
+verify_jwt = false
+
+[functions.submit-product-idea]
+verify_jwt = false
+
+[functions.project-context-builder]
+verify_jwt = false
+
+[functions.generate-offer]
+verify_jwt = false
+
+[functions.get-admin-dashboard]
+verify_jwt = false
+
+[functions.get-analysis-logs]
+verify_jwt = false
+
+[functions.get-prototype-logs]
+verify_jwt = false
+
+[functions.generate-hints]
+verify_jwt = false
+
+[functions.generate-hypotheses]
+verify_jwt = false
+
+[functions.idea-lab-chat]
+verify_jwt = false
+
+[functions.admin-api]
+verify_jwt = false
+
+[functions.forge-submit-lead]
+verify_jwt = false
+
+[functions.forge-structure-kb]
+verify_jwt = false
+
+[functions.forge-import-reviews]
+verify_jwt = false
+
+[functions.forge-generate-prototype]
+verify_jwt = false
+
+[functions.forge-lab-chat]
+verify_jwt = false
+
+[functions.forge-generate-rsya-offers]
+verify_jwt = false
+
+[functions.forge-studio-config]
+verify_jwt = false
+
+[functions.forge-studio-generate]
+verify_jwt = false
+
+[functions.idea-lab-register]
+verify_jwt = false
