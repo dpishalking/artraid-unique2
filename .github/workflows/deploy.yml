@@ -28,5 +28,5 @@ jobs:
           server: ${{ secrets.TIMEWEB_FTP_HOST }}
           username: ${{ secrets.TIMEWEB_FTP_USER }}
           password: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
-          local-dir: ./dist
+          local-dir: ./dist/
           server-dir: ${{ secrets.TIMEWEB_FTP_SERVER_DIR }}
